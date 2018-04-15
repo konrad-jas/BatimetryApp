@@ -1,7 +1,9 @@
-﻿namespace BatimetryApp.Services.Interfaces
+﻿using System;
+
+namespace BatimetryApp.Services.Interfaces
 {
 	public interface IAwsResourceLocator
 	{
-		string CreateResourcePath();
+		string CreateResourcePath(DateTime date);
 	}
 }
