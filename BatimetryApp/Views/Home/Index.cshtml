@@ -14,10 +14,11 @@
 			, new {@onchange = "ChangeLayer(this.value)"})
 </div>
 <div style="height: 75vh; width: 100%" id="map-id"></div>
-@*<div class="arrow_box" id="popup-container"></div>*@
+<div class="arrow_box" id="popup-container">
+	<a href="#" id="popup-closer" class="ol-popup-closer"></a>
+	<div id="popup-content"></div>
+</div>
 <script>
-	//import Overlay from 'ol/overlay';
-	//import coordinate from 'ol/coordinate';
 
 	var currentLayer;
 	var map;
@@ -28,6 +29,10 @@
 		UpdateMap(newLayer);
 	}
 
+	function Round(value, decimals) {
+		return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+	}
+
 	//function ColorForIndex(index) {
 	//	return index >= 10 ? "#FF0000" :
 	//		index >= 5 ? "#FFFF00" :
@@ -35,8 +40,15 @@
 	//		"#000000";
 	//}
 
-	function ShowPopup() {
+	function ShowPopup(depth, coordinate) {
+		var popupContent = document.getElementById('popup-content');
+		popupContent.innerHTML = "Depth: " + Round(depth, 2) + "m";
+		overlay.setPosition(coordinate);
+	}
 
+	function ClosePopup() {
+		overlay.setPosition(undefined);
+		return false;
 	}
 
 	function CreateLayer(layerName) {
@@ -61,7 +73,7 @@
 	}
 
 	function OnClick(eventData) {
-		//overlay.setPosition();
+		overlay.setPosition();
 
 		var viewProjection = view.getProjection();
 		var viewResolution = view.getResolution();
@@ -76,7 +88,9 @@
 				crossDomain: true
 			}).then(function (response) {
 				var result = parser.readFeatures(response);
-				var depth = result[0].N.GRAY_INDEX;
+				if (result) {
+					ShowPopup(result[0].N.GRAY_INDEX, eventData.coordinate);
+				}
 			});
 		}
 	}
@@ -99,11 +113,14 @@
 
 	map.on('click', OnClick);
 
-	//overlay = new Overlay({
-	//	element: document.getElementById('popup-container'),
-	//	positioning: 'bottom-center',
-	//	offset: [0, -10]
-	//});
-	//map.addOverlay(overlay);
+	overlay = new ol.Overlay({
+		element: document.getElementById('popup-container'),
+		positioning: 'bottom-center',
+		offset: [0, -10]
+	});
+	map.addOverlay(overlay);
+
+	var closer = document.getElementById('popup-closer');
+	closer.onclick = ClosePopup;
 
 </script>
