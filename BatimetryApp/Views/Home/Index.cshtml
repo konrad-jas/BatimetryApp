@@ -5,8 +5,8 @@
 @{
     ViewBag.Title = "Index";
 }
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDk7yClQXO14Hh3GQ772X_s3FwbYdT_eKE" async></script>
-@*<link rel="stylesheet" href="~/Styles/mapStyles.css"/>*@
+@*<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDk7yClQXO14Hh3GQ772X_s3FwbYdT_eKE" async></script>*@
+<link rel="stylesheet" href="~/Styles/mapStyles.css"/>
 <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
 <div style="height: 50px; margin-top: 20px; width: 10vw">
 		@Html.DropDownList("Select layer",
@@ -14,10 +14,14 @@
 			, new {@onchange = "ChangeLayer(this.value)"})
 </div>
 <div style="height: 75vh; width: 100%" id="map-id"></div>
+@*<div class="arrow_box" id="popup-container"></div>*@
 <script>
+	//import Overlay from 'ol/overlay';
+	//import coordinate from 'ol/coordinate';
 
 	var currentLayer;
 	var map;
+	var overlay;
 
 	function ChangeLayer(layerData) {
 		var newLayer = CreateLayer(layerData);
@@ -56,18 +60,50 @@
 		map.addLayer(currentLayer);
 	}
 
+	function OnClick(eventData) {
+		//overlay.setPosition();
+
+		var viewProjection = view.getProjection();
+		var viewResolution = view.getResolution();
+
+		var url = currentLayer.getSource().getGetFeatureInfoUrl(
+			eventData.coordinate, viewResolution, viewProjection,
+			{ 'INFO_FORMAT': 'application/json'});
+		if (url) {
+			var parser = new ol.format.GeoJSON();
+			$.ajax({
+				url: url,
+				crossDomain: true
+			}).then(function (response) {
+				var result = parser.readFeatures(response);
+				var depth = result[0].N.GRAY_INDEX;
+			});
+		}
+	}
+
 	@{
 		var firstLayer = ((IEnumerable<Layer>)ViewData["layers"]).First();
 	}
 
-	currentLayer = CreateLayer("@firstLayer.Name");
-	map = new ol.Map({
-		layers: currentLayer,
-		target: 'map-id',
-		view: new ol.View({
-			center: [2118528.6759519447, 7277722.337088201],
-			zoom: 10
-		})
+	var layers = CreateLayer("@firstLayer.Name");
+	currentLayer = layers[1];
+	view = new ol.View({
+		center: [2118528.6759519447, 7277722.337088201],
+		zoom: 10
 	});
+	map = new ol.Map({
+		layers: layers,
+		target: 'map-id',
+		view: view
+	});
+
+	map.on('click', OnClick);
+
+	//overlay = new Overlay({
+	//	element: document.getElementById('popup-container'),
+	//	positioning: 'bottom-center',
+	//	offset: [0, -10]
+	//});
+	//map.addOverlay(overlay);
 
 </script>
